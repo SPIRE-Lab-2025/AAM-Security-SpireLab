@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AAM CNS Security — SPIRE Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;
+  --surface:#0e1524;
+  --surface2:#141d30;
+  --accent:#3e8bff;
+  --accent2:#00d4a0;
+  --accent3:#ff6b3d;
+  --warn:#ffb347;
+  --text:#e8edf5;
+  --muted:#7a8ba8;
+  --border:rgba(62,139,255,0.18);
+}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text)}
+#app{width:100vw;height:100vh;position:relative;overflow:hidden}
+
+/* slides */
+.slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:60px 80px;
+  opacity:0;pointer-events:none;transition:opacity 0s;
+}
+.slide.active{opacity:1;pointer-events:all}
+
+/* background grid */
+.grid-bg{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(62,139,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(62,139,255,0.04) 1px, transparent 1px);
+  background-size:60px 60px;
+  pointer-events:none;
+}
+.glow{
+  position:absolute;border-radius:50%;pointer-events:none;filter:blur(80px);opacity:0.15;
+}
+
+/* typography */
+.eyebrow{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
+h1{font-family:'Syne',sans-serif;font-size:clamp(36px,5vw,64px);font-weight:800;line-height:1.05;letter-spacing:-1.5px;color:#fff}
+h2{font-family:'Syne',sans-serif;font-size:clamp(26px,3.5vw,44px);font-weight:700;line-height:1.1;letter-spacing:-0.8px;color:#fff}
+h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:600;color:#fff}
+.subtitle{font-size:16px;font-weight:300;color:var(--muted);line-height:1.7;margin-top:14px;max-width:640px}
+.accent-word{color:var(--accent)}
+.accent2{color:var(--accent2)}
+.accent3{color:var(--accent3)}
+.warn{color:var(--warn)}
+
+/* anim */
+.anim-item{opacity:0;transform:translateY(24px)}
+.slide.active .anim-item{animation:rise 0.55s cubic-bezier(0.22,1,0.36,1) forwards}
+.slide.active .anim-item:nth-child(1){animation-delay:0.05s}
+.slide.active .anim-item:nth-child(2){animation-delay:0.15s}
+.slide.active .anim-item:nth-child(3){animation-delay:0.25s}
+.slide.active .anim-item:nth-child(4){animation-delay:0.35s}
+.slide.active .anim-item:nth-child(5){animation-delay:0.45s}
+.slide.active .anim-item:nth-child(6){animation-delay:0.55s}
+.slide.active .anim-item:nth-child(7){animation-delay:0.65s}
+.slide.active .anim-item:nth-child(8){animation-delay:0.75s}
+.slide.active .anim-item:nth-child(9){animation-delay:0.85s}
+@keyframes rise{to{opacity:1;transform:translateY(0)}}
+
+/* pill tag */
+.tag{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:99px;font-size:12px;font-weight:500;letter-spacing:0.3px;border:1px solid}
+.tag-blue{color:var(--accent);border-color:rgba(62,139,255,0.3);background:rgba(62,139,255,0.07)}
+.tag-green{color:var(--accent2);border-color:rgba(0,212,160,0.3);background:rgba(0,212,160,0.07)}
+.tag-red{color:var(--accent3);border-color:rgba(255,107,61,0.3);background:rgba(255,107,61,0.07)}
+.tag-warn{color:var(--warn);border-color:rgba(255,179,71,0.3);background:rgba(255,179,71,0.07)}
+
+/* card */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:22px 24px;
+}
+.card-grid{display:grid;gap:14px;width:100%;max-width:900px}
+
+/* bullet list */
+/* .blist{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.blist li{display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.5;color:var(--muted)}
+.blist li .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:8px}
+.blist li strong{color:var(--text)} */
+
+
+/* bullet list */
+.blist{
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:12px;
+}
+
+.blist li{
+  position:relative;
+  padding-left:18px;
+
+  font-size:15px;
+  line-height:1.6;
+  color:var(--muted);
+}
+
+.blist li .dot{
+  position:absolute;
+  left:0;
+  top:10px;
+
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--accent);
+}
+
+.blist li strong{
+  color:var(--text);
+}
+
+
+/* divider */
+.divider{width:48px;height:2px;background:linear-gradient(90deg,var(--accent),transparent);margin:20px 0;border-radius:2px}
+
+/* stat row */
+.stat-row{display:flex;gap:24px;margin-top:24px}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:#fff}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px}
+
+/* progress bar */
+.pbar{height:3px;border-radius:99px;background:rgba(255,255,255,0.07);margin-top:8px}
+.pbar-fill{height:100%;border-radius:99px;background:var(--accent)}
+
+/* two col */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:900px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;width:100%;max-width:900px}
+
+/* icon circle */
+.icon-c{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+
+.paper-shot{background:#fff;border-radius:10px;padding:7px;box-shadow:0 22px 60px rgba(0,0,0,0.35);transform:rotate(-1.2deg);border:1px solid rgba(255,255,255,0.24)}
+.paper-shot img{width:100%;display:block;border-radius:6px}
+
+/* nav */
+#nav{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:16px;
+  background:rgba(14,21,36,0.85);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:99px;padding:10px 20px;
+  z-index:100;
+}
+.nav-btn{
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:18px;padding:4px 8px;border-radius:8px;transition:color 0.2s,background 0.2s;
+  display:flex;align-items:center;
+}
+.nav-btn:hover{color:#fff;background:rgba(255,255,255,0.07)}
+.nav-btn:disabled{opacity:0.3;cursor:default}
+#slide-counter{font-size:12px;color:var(--muted);letter-spacing:1px;min-width:48px;text-align:center}
+.dots{display:flex;gap:5px;align-items:center;max-width:360px;flex-wrap:wrap;justify-content:center}
+.dot-nav{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);transition:background 0.3s,width 0.3s;cursor:pointer;flex-shrink:0}
+.dot-nav.on{background:var(--accent);width:16px;border-radius:99px}
+
+/* slide transition */
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-40px)}}
+@keyframes slideInBack{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideOutBack{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+
+/* keyboard hint */
+#hint{position:fixed;top:20px;right:24px;font-size:11px;color:var(--muted);letter-spacing:0.5px;opacity:0.6}
+
+/* line decoration */
+.line-accent{display:block;width:2px;height:100%;background:var(--accent);border-radius:2px;flex-shrink:0}
+.blockq{display:flex;gap:14px;padding:16px 0}
+
+/* threat icon */
+.threat-row{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.threat-row:last-child{border-bottom:none}
+
+/* goal steps */
+.step{display:flex;align-items:flex-start;gap:16px;padding:16px 0}
+.step-num{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:rgba(62,139,255,0.2);line-height:1;flex-shrink:0;width:36px}
+.step-content h3{margin-bottom:4px}
+
+/* scanner anim */
+@keyframes scan{0%{top:0%}100%{top:100%}}
+.scanner{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);animation:scan 2.5s linear infinite;opacity:0.7}
+
+/* pulse ring */
+@keyframes pulse-ring{0%{transform:scale(1);opacity:0.6}100%{transform:scale(2.2);opacity:0}}
+.pulse-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent3);animation:pulse-ring 1.8s ease-out infinite}
+
+/* title slide specific */
+#s0 .bg-graphic{
+  position:absolute;right:-80px;top:-80px;width:520px;height:520px;
+  border-radius:50%;border:1px solid var(--border);
+}
+#s0 .bg-graphic::before{
+  content:'';position:absolute;inset:60px;border-radius:50%;border:1px solid var(--border);
+}
+#s0 .bg-graphic::after{
+  content:'';position:absolute;inset:130px;border-radius:50%;border:1px solid var(--border);
+}
+
+/* equation box */
+.eq-box{background:rgba(62,139,255,0.06);border:1px solid rgba(62,139,255,0.2);border-radius:12px;padding:14px 20px;font-family:monospace;font-size:14px;color:var(--accent);margin:8px 0;text-align:center;letter-spacing:0.5px}
+
+/* animation for TCAS signal path */
+@keyframes dash-move{to{stroke-dashoffset:-30}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes fly-drone{0%{transform:translateX(0)}50%{transform:translateX(20px)}100%{transform:translateX(0)}}
+@keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* cellular tower anim */
+@keyframes signal-expand{0%{transform:scale(0.3);opacity:0.8}100%{transform:scale(1);opacity:0}}
+.signal-ring{position:absolute;border-radius:50%;border:2px solid;animation:signal-expand 2s ease-out infinite}
+
+/* team card */
+.team-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;transition:border-color 0.3s,transform 0.3s}
+.team-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.team-photo{width:72px;height:72px;border-radius:50%;background:var(--surface2);margin:0 auto 12px;overflow:hidden;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px}
+.team-photo img{width:100%;height:100%;object-fit:cover}
+.team-pi .team-photo{width:90px;height:90px;border-color:var(--accent);box-shadow:0 0 0 3px rgba(62,139,255,0.15)}
+
+/* paper thumbnail placeholder */
+.paper-thumb{background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative}
+.paper-lines{padding:16px}
+.paper-line{height:8px;border-radius:4px;background:rgba(255,255,255,0.08);margin-bottom:8px}
+.paper-line.title{height:14px;background:rgba(62,139,255,0.2);width:80%}
+.paper-line.author{height:8px;background:rgba(0,212,160,0.15);width:60%}
+</style>
+
+
+
+<!-- 2nd stage added Styling -->
+<style>
+  /* center wrapper */
+.center-wrap{
+  width:100%;
+  max-width:1100px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  position:relative;
+  z-index:2;
+}
+
+/* mini timeline layout */
+.timeline-mini{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:22px;
+  width:100%;
+  max-width:980px;
+  margin-top:34px;
+  align-items:stretch;
+}
+
+/* small label */
+.mini-label{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:5px 12px;
+  border-radius:999px;
+  background:rgba(62,139,255,0.08);
+  border:1px solid rgba(62,139,255,0.18);
+  color:var(--accent);
+  font-size:11px;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  font-weight:600;
+  width:fit-content;
+}
+
+/* timeline card polish */
+.timeline-mini .card{
+  position:relative;
+  overflow:hidden;
+  min-height:220px;
+  transition:
+    transform .35s ease,
+    border-color .35s ease,
+    box-shadow .35s ease;
+}
+
+.timeline-mini .card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(62,139,255,0.35);
+  box-shadow:0 20px 50px rgba(0,0,0,0.35);
+}
+
+/* subtle top glow */
+.timeline-mini .card::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  height:2px;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    var(--accent),
+    transparent
+  );
+  opacity:.7;
+}
+
+/* radar stage */
+.radar-stage{
+  position:relative;
+  width:250px;
+  height:250px;
+  border-radius:50%;
+  border:2px solid rgba(62,139,255,0.18);
+  background:
+    radial-gradient(circle at center,
+      rgba(62,139,255,0.08) 0%,
+      rgba(62,139,255,0.03) 45%,
+      transparent 75%);
+  overflow:hidden;
+  margin-top:24px;
+  margin-left: 80px;
+  box-shadow:
+    0 0 40px rgba(62,139,255,0.08),
+    inset 0 0 40px rgba(62,139,255,0.08);
+}
+
+/* radar rings */
+.radar-stage::before,
+.radar-stage::after{
+  content:'';
+  position:absolute;
+  inset:50%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  border:1px solid rgba(62,139,255,0.14);
+}
+
+.radar-stage::before{
+  width:70%;
+  height:70%;
+}
+
+.radar-stage::after{
+  width:40%;
+  height:40%;
+}
+
+/* rotating sweep */
+.radar-sweep{
+  position:absolute;
+  inset:-10%;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      rgba(0,212,160,0.03) 250deg,
+      rgba(0,212,160,0.35) 330deg,
+      rgba(0,212,160,0.75) 360deg
+    );
+  animation:radarRotate 4s linear infinite;
+  transform-origin:center center;
+}
+
+/* aircraft blips */
+.aircraft-dot{
+  position:absolute;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:var(--accent2);
+  box-shadow:
+    0 0 12px rgba(0,212,160,0.9),
+    0 0 28px rgba(0,212,160,0.45);
+  animation:pulseDot 1.8s ease-in-out infinite;
+}
+
+.aircraft-dot.red{
+  background:var(--accent3);
+  box-shadow:
+    0 0 12px rgba(255,107,61,0.9),
+    0 0 28px rgba(255,107,61,0.45);
+}
+
+/* animations */
+@keyframes radarRotate{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+
+@keyframes pulseDot{
+  0%,100%{
+    transform:scale(1);
+    opacity:1;
+  }
+  50%{
+    transform:scale(1.35);
+    opacity:.7;
+  }
+}
+
+/* drone defense scene */
+.drone-scene{
+  position:relative;
+  width:520px;
+  height:320px;
+  margin-top:28px;
+  border-radius:24px;
+  border:1px solid var(--border);
+  background:
+    radial-gradient(circle at 45% 40%, rgba(62,139,255,.12), transparent 35%),
+    linear-gradient(180deg, rgba(14,21,36,.95), rgba(8,12,20,.95));
+  overflow:hidden;
+  box-shadow:0 24px 70px rgba(0,0,0,.35);
+}
+
+/* subtle grid inside */
+.drone-scene::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(62,139,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62,139,255,.05) 1px, transparent 1px);
+  background-size:42px 42px;
+  opacity:.5;
+}
+
+/* drone / aircraft icon */
+.flight-icon{
+  position:absolute;
+  z-index:3;
+  font-size:42px;
+  filter:drop-shadow(0 0 18px rgba(62,139,255,.75));
+  animation:droneFloat 3s ease-in-out infinite;
+}
+
+/* sensor cone */
+.sensor-fan{
+  position:absolute;
+  z-index:2;
+  width:190px;
+  height:190px;
+  border-radius:50%;
+  background:linear-gradient(0deg, rgba(0,212,160,.22), transparent 65%);
+  clip-path:polygon(50% 50%, 0% 0%, 100% 0%);
+  opacity:.85;
+  transform-origin:50% 50%;
+  animation:sensorPulse 2.8s ease-in-out infinite;
+}
+
+/* optional soft signal path */
+.drone-scene::after{
+  content:'';
+  position:absolute;
+  left:22%;
+  top:65%;
+  width:56%;
+  height:2px;
+  background:linear-gradient(90deg, transparent, var(--warn), transparent);
+  opacity:.65;
+  animation:signalFlow 2.2s linear infinite;
+}
+
+/* animations */
+@keyframes droneFloat{
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-10px) rotate(2deg)}
+}
+
+@keyframes sensorPulse{
+  0%,100%{
+    opacity:.35;
+    transform:scale(.92);
+  }
+  50%{
+    opacity:.9;
+    transform:scale(1.05);
+  }
+}
+
+@keyframes signalFlow{
+  0%{opacity:.2;transform:translateX(-20px)}
+  50%{opacity:.9}
+  100%{opacity:.2;transform:translateX(20px)}
+}
+
+/* TCAS / ACAS explanation scene */
+.tcas-info-card{
+  padding:16px 18px;
+  border-color:rgba(62,139,255,.22);
+}
+
+.tcas-info-card h3{
+  font-size:15px;
+  margin-top:10px;
+  margin-bottom:6px;
+}
+
+.tcas-info-card p{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.55;
+}
+
+/* ACAS animated scene */
+.acas-scene{
+  position:relative;
+  width:440px;
+  height:360px;
+  border-radius:24px;
+  border:1px solid var(--border);
+  background:
+    radial-gradient(circle at center, rgba(62,139,255,.12), transparent 45%),
+    linear-gradient(180deg, rgba(14,21,36,.95), rgba(8,12,20,.95));
+  overflow:hidden;
+  box-shadow:0 24px 70px rgba(0,0,0,.35);
+}
+
+/* radar rings */
+.acas-ring{
+  position:absolute;
+  left:50%;
+  top:50%;
+  border-radius:50%;
+  border:1px solid rgba(62,139,255,.18);
+  transform:translate(-50%,-50%);
+}
+
+.acas-ring.r1{width:110px;height:110px}
+.acas-ring.r2{width:210px;height:210px}
+.acas-ring.r3{width:310px;height:310px}
+
+/* aircraft */
+.acas-plane{
+  position:absolute;
+  z-index:4;
+  font-size:34px;
+  filter:drop-shadow(0 0 14px rgba(62,139,255,.8));
+}
+
+.acas-plane.own{
+  left:36%;
+  top:46%;
+  color:var(--accent2);
+  animation:ownMove 4s ease-in-out infinite;
+}
+
+.acas-plane.intruder{
+  right:16%;
+  top:28%;
+  color:var(--accent3);
+  transform:rotate(210deg);
+  animation:intruderMove 4s ease-in-out infinite;
+}
+
+/* predicted paths */
+.acas-path{
+  position:absolute;
+  height:2px;
+  border-radius:99px;
+  opacity:.75;
+}
+
+.own-path{
+  left:80px;
+  top:205px;
+  width:220px;
+  background:linear-gradient(90deg, transparent, var(--accent2));
+  transform:rotate(-8deg);
+}
+
+.intruder-path{
+  right:62px;
+  top:142px;
+  width:210px;
+  background:linear-gradient(90deg, transparent, var(--accent3));
+  transform:rotate(28deg);
+}
+
+/* warning */
+.acas-alert{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  padding:8px 16px;
+  border-radius:999px;
+  border:1px solid rgba(255,107,61,.45);
+  background:rgba(255,107,61,.10);
+  color:var(--accent3);
+  font-family:'Syne',sans-serif;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:1.4px;
+  animation:alertPulse 1.2s ease-in-out infinite;
+  z-index:5;
+}
+
+/* advisories */
+.acas-advisory{
+  position:absolute;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.8px;
+  z-index:5;
+}
+
+.acas-advisory.climb{
+  left:24px;
+  bottom:34px;
+  color:var(--accent2);
+  border:1px solid rgba(0,212,160,.35);
+  background:rgba(0,212,160,.08);
+  animation:advisoryGlow 1.8s ease-in-out infinite;
+}
+
+.acas-advisory.descend{
+  right:24px;
+  bottom:34px;
+  color:var(--warn);
+  border:1px solid rgba(255,179,71,.35);
+  background:rgba(255,179,71,.08);
+  animation:advisoryGlow 1.8s ease-in-out infinite .6s;
+}
+
+/* animations */
+@keyframes ownMove{
+  0%,100%{transform:translate(0,0) rotate(5deg)}
+  50%{transform:translate(18px,-4px) rotate(5deg)}
+}
+
+@keyframes intruderMove{
+  0%,100%{transform:translate(0,0) rotate(210deg)}
+  50%{transform:translate(-20px,22px) rotate(210deg)}
+}
+
+@keyframes alertPulse{
+  0%,100%{
+    opacity:.55;
+    box-shadow:0 0 0 rgba(255,107,61,0);
+  }
+  50%{
+    opacity:1;
+    box-shadow:0 0 28px rgba(255,107,61,.35);
+  }
+}
+
+@keyframes advisoryGlow{
+  0%,100%{opacity:.55}
+  50%{opacity:1}
+}
+
+/* video frame */
+.video-frame{
+  position:relative;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid rgba(255,107,61,0.28);
+  background:var(--surface2);
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+
+/* video styling */
+.video-frame video{
+  width:100%;
+  aspect-ratio:16/9;
+  display:block;
+  object-fit:cover;
+  background:#000;
+}
+
+/* subtle cinematic overlay */
+.video-frame::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0,0,0,.08),
+      transparent 20%,
+      transparent 80%,
+      rgba(0,0,0,.18)
+    );
+}
+
+
+/* wrapper used by the slide */
+.wide-wrap{
+  max-width:980px;
+  width:100%;
+  position:relative;
+  z-index:2;
+}
+
+/* cellular tower scene */
+.tower-scene{
+  height:310px;
+  position:relative;
+  border-radius:18px;
+  background:linear-gradient(
+    180deg,
+    rgba(8,12,20,0.95),
+    rgba(14,21,36,0.98)
+  );
+  border:1px solid rgba(255,107,61,.18);
+  overflow:hidden;
+}
+
+/* tower / aircraft icon */
+.tower{
+  position:absolute;
+  bottom:32px;
+  width:64px;
+  height:150px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  font-size:58px;
+}
+
+/* animated signal rings */
+.signal-ring{
+  position:absolute;
+  border:2px solid rgba(62,139,255,.35);
+  border-radius:50%;
+  animation:signalPulse 2.2s ease-out infinite;
+}
+
+.signal-ring.red{
+  border-color:rgba(255,107,61,.45);
+  animation-duration:1.6s;
+}
+
+@keyframes signalPulse{
+  0%{
+    transform:scale(.35);
+    opacity:.9;
+  }
+  100%{
+    transform:scale(1.85);
+    opacity:0;
+  }
+}
+
+/* moving data packet */
+.data-packet{
+  position:absolute;
+  width:10px;
+  height:10px;
+  border-radius:2px;
+  background:var(--accent2);
+  box-shadow:0 0 10px var(--accent2);
+  animation:packetPath 3s linear infinite;
+}
+
+@keyframes packetPath{
+  0%{
+    left:18%;
+    top:70%;
+    opacity:0;
+  }
+  15%{
+    opacity:1;
+  }
+  52%{
+    left:50%;
+    top:34%;
+  }
+  82%{
+    left:80%;
+    top:70%;
+    opacity:1;
+  }
+  100%{
+    left:86%;
+    top:70%;
+    opacity:0;
+  }
+}
+
+/* optional redirected packet for attack slides */
+.redirect-packet{
+  background:var(--accent3);
+  box-shadow:0 0 10px var(--accent3);
+  animation:redirectPath 3s linear infinite;
+}
+
+@keyframes redirectPath{
+  0%{
+    left:18%;
+    top:70%;
+    opacity:0;
+  }
+  15%{
+    opacity:1;
+  }
+  52%{
+    left:50%;
+    top:34%;
+  }
+  75%{
+    left:49%;
+    top:70%;
+    opacity:1;
+  }
+  100%{
+    left:49%;
+    top:70%;
+    opacity:0;
+  }
+}
+
+/* corner branding */
+#corner-branding{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  padding:0 28px;
+  z-index:90;
+  pointer-events:none;
+}
+
+/* base logo style */
+.corner-logo{
+  object-fit:contain;
+  opacity:.88;
+  filter:
+    drop-shadow(0 4px 18px rgba(0,0,0,.35));
+  transition:
+    opacity .3s ease,
+    transform .3s ease;
+}
+
+/* left ERAU logo */
+.erau-logo{
+  height:60px;
+  width:auto;
+  margin-bottom: 20px;
+}
+
+.spire-logo{
+  height:100px;
+  width:auto;
+}
+
+/* subtle hover glow */
+.corner-logo:hover{
+  opacity:1;
+  transform:translateY(-2px);
+}
+
+/* optional cinematic fade */
+.slide:not(.active) ~ #corner-branding .corner-logo{
+  opacity:.82;
+}
+
+.team-photo{
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  overflow:hidden;
+  border:2px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--surface2);
+}
+
+.team-photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+/* ---- Experimental Outcome slide ---- */
+.exp-img-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: border-color .3s, transform .3s;
+}
+
+.exp-img-card:hover {
+  border-color: rgba(62,139,255,.35);
+  transform: translateY(-3px);
+}
+
+.exp-img-label {
+  padding: 12px 16px 8px;
+}
+
+.exp-img-card img {
+  width: 100%;
+  display: block;
+  object-fit: contain;
+  background: #fff;
+  max-height: 260px;
+}
+
+.exp-img-caption {
+  padding: 10px 16px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.exp-img-row {
+  max-width: 980px;
+  align-items: start;
+}
+
+/* In your existing styles or inline on the PI card wrapper */
+.team-pi-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px; /* match your three-col gap exactly */
+  width: 100%;
+  max-width: 900px; /* match your three-col max-width */
+}
+
+</style>
+
+
+</head>
+<body>
+<div id="app">
+
+<!-- corner logos -->
+<div id="corner-branding">
+  <img src="riddle_logo.png" class="corner-logo erau-logo" alt="Embry-Riddle">
+  <img src="spire1.png" class="corner-logo spire-logo" alt="SPIRE Lab">
+</div>
+
+<!-- ===================== SLIDE 0: Title ===================== -->
+<div class="slide active" id="s0">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:500px;top:-100px;left:-100px;background:var(--accent)"></div>
+  <div class="glow" style="width:400px;height:400px;bottom:-80px;right:-80px;background:var(--accent2)"></div>
+  <div class="bg-graphic"></div>
+  <div style="max-width:800px;width:100%;position:relative;z-index:2">
+    <div class="anim-item">
+      <span class="tag tag-blue">SPIRE Lab · AAM CNS Cybersecurity</span>
+    </div>
+    <div style="height:24px"></div>
+    <h1 class="anim-item">Securing the <span class="accent-word">Future</span><br>of Advanced Air Mobility</h1>
+    <div class="divider anim-item"></div>
+    <p class="subtitle anim-item">A cybersecurity investigation into AAM's communication, navigation, and surveillance ecosystem — before adversaries exploit it first.</p>
+    <div class="stat-row anim-item" style="margin-top:36px">
+      <div class="stat">
+        <span class="stat-num" style="color:var(--accent2)">2035</span>
+        <span class="stat-label">FAA Integration Target</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num accent-word">$87B+</span>
+        <span class="stat-label">Projected AAM Market</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" style="color:var(--warn)">Zero</span>
+        <span class="stat-label">Comprehensive Security Frameworks</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 1: The Rise of AAM ===================== -->
+<!-- <div class="slide" id="s1">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:600px;height:300px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent)"></div>
+  <div style="max-width:900px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Chapter 01</div>
+    <h2 class="anim-item">The skies are being <span class="accent-word">reinvented</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:32px">
+      <div class="anim-item">
+        <p class="subtitle" style="margin-top:0">FAA, NSF, and Department of Transportation (DoT) are actively funding real-world AAM deployment. Urban air taxis, autonomous cargo drones, and electric aircraft aren't concept art — they're being tested on flight paths <em>today.</em></p>
+        <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:8px">
+          <span class="tag tag-blue">FAA NextGen</span>
+          <span class="tag tag-blue">NSF Research</span>
+          <span class="tag tag-green">DoT Investment</span>
+          <span class="tag tag-blue">NASA UAS</span>
+          <span class="tag tag-red">AAM National Strategy 2025</span>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="margin-bottom:14px">
+          <h3 style="font-size:14px;color:var(--muted);font-weight:400;margin-bottom:8px">Commercial air taxis operational</h3>
+          <div class="pbar"><div class="pbar-fill" style="width:35%;background:var(--accent)"></div></div>
+          <p style="font-size:12px;color:var(--muted);margin-top:6px">Joby, Archer, Wisk — 2025–2035</p>
+        </div>
+        <div class="card" style="margin-bottom:14px">
+          <h3 style="font-size:14px;color:var(--muted);font-weight:400;margin-bottom:8px">UTM infrastructure rollout</h3>
+          <div class="pbar"><div class="pbar-fill" style="width:55%;background:var(--accent2)"></div></div>
+          <p style="font-size:12px;color:var(--muted);margin-top:6px">USS / USS-USS interconnect pilots</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;color:var(--muted);font-weight:400;margin-bottom:8px">Regulatory framework readiness</h3>
+          <div class="pbar"><div class="pbar-fill" style="width:45%;background:var(--warn)"></div></div>
+          <p style="font-size:12px;color:var(--muted);margin-top:6px">Still under active development</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<!-- ===================== SLIDE 2: The Ecosystem ===================== -->
+<div class="slide" id="s2">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:700px;height:400px;top:20%;right:-100px;background:var(--accent2)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Advanced Air Mobility (AAM)</div>
+    <h2 class="anim-item">A completely <span class="accent2">new ecosystem</span><br>stitched from old parts</h2>
+    <div class="divider anim-item"></div>
+    <div class="three-col" style="margin-top:28px">
+      <div class="anim-item">
+        <div class="card" style="height:100%">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div class="icon-c" style="background:rgba(62,139,255,0.12);color:var(--accent)">✈</div>
+            <h3>Aircraft</h3>
+          </div>
+          <ul class="blist">
+            <li><span class="dot"></span><strong>eVTOL</strong> — electric vertical takeoff</li>
+            <li><span class="dot"></span><strong>eCTOL</strong> — electric conventional</li>
+            <li><span class="dot"></span><strong>UAVs / Drones</strong> — autonomous cargo</li>
+          </ul>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div class="icon-c" style="background:rgba(0,212,160,0.12);color:var(--accent2)">🏗</div>
+            <h3>Infrastructure</h3>
+          </div>
+          <ul class="blist">
+            <li><span class="dot" style="background:var(--accent2)"></span><strong>Vertiports</strong> — take-off/landing hubs</li>
+            <li><span class="dot" style="background:var(--accent2)"></span><strong>GCS</strong> — ground control stations</li>
+            <li><span class="dot" style="background:var(--accent2)"></span><strong>Charging hubs</strong> &amp; UTM systems</li>
+          </ul>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div class="icon-c" style="background:rgba(255,179,71,0.12);color:var(--warn)">📡</div>
+            <h3>Communications</h3>
+          </div>
+          <ul class="blist">
+            <li><span class="dot" style="background:var(--warn)"></span><strong>ADS-B / TCAS</strong> — legacy aviation</li>
+            <li><span class="dot" style="background:var(--warn)"></span><strong>5G/6G cellular</strong> — adopted from telecoms</li>
+            <li><span class="dot" style="background:var(--warn)"></span><strong>Satellite + GPS</strong> — positioning</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="anim-item" style="margin-top:20px">
+      <div class="card" style="border-color:rgba(255,179,71,0.25);background:rgba(255,179,71,0.04)">
+        <p style="font-size:14px;color:var(--muted);line-height:1.7"><span class="warn" style="font-weight:500">Key insight:</span> &nbsp;AAM adopts protocols from civil aviation, Tesla-style autonomy, and cellular networks — each designed in silos. Their integration creates unexplored security gaps.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 3: The Problem ===================== -->
+<div class="slide" id="s3">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent3)"></div>
+  <div style="max-width:800px;width:100%;position:relative;z-index:2;text-align:center">
+    <div class="eyebrow anim-item" style="text-align:center;justify-content:center;display:flex">The Core Problem</div>
+    <h2 class="anim-item" style="text-align:center">Old technology<br><span class="accent3">New attack surface</span></h2>
+    <div class="divider anim-item" style="margin:20px auto"></div>
+    <p class="subtitle anim-item" style="text-align:center;margin:0 auto">When well established protocols are adapted for new systems, the gaps between them become the vulnerabilities. AAM inherits decades of legacy weaknesses — while creating entirely new ones.</p>
+    <div class="anim-item" style="margin-top:40px;display:flex;justify-content:center">
+      <div style="position:relative;width:220px;height:220px">
+        <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,107,61,0.3);display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;inset:30px;border-radius:50%;border:2px solid rgba(255,107,61,0.5);display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;inset:30px;border-radius:50%;border:2px solid rgba(255,107,61,0.8);display:flex;align-items:center;justify-content:center">
+              <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent3);text-align:center;line-height:1.3">CRITICAL<br>GAPS</span>
+            </div>
+          </div>
+        </div>
+        <div class="pulse-ring" style="inset:40px"></div>
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);white-space:nowrap" class="tag tag-warn">
+            Legacy Protocols
+          </div>
+
+          <div style="position:absolute;right:-70px;top:50%;transform:translateY(-50%)" class="tag tag-red">
+            Wireless Exposure
+          </div>
+
+          <div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);white-space:nowrap" class="tag tag-red">
+            Cross-System Dependency
+          </div>
+
+          <div style="position:absolute;left:-80px;top:50%;transform:translateY(-50%);white-space:nowrap" class="tag tag-warn">
+            Weak Trust Models
+          </div>
+      </div>
+    </div>
+    <p class="anim-item" style="margin-top:48px;font-size:17px;font-style:italic;color:var(--muted);text-align:center">Is AAM ready to resist attacks and operate safely?</p>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 4: SPIRE Lab ===================== -->
+<div class="slide" id="s4">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:600px;height:300px;top:0;left:-100px;background:var(--accent)"></div>
+  <div style="max-width:900px;width:100%;position:relative;z-index:2">
+    <!-- <div class="eyebrow anim-item">Chapter 04</div> -->
+    <h2 class="anim-item">This is where <span class="accent-word">our research </span> steps in</h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:28px">
+      <div>
+        <p class="subtitle anim-item" style="margin-top:0">Investigate the security landscape of AAM prior to deployment by systematically identifying threats, simulating cyber-physical attacks, and developing resilient defense mechanisms to safeguard lives at scale.</p>
+        <div class="anim-item" style="margin-top:20px">
+          <div class="card" style="border-color:rgba(62,139,255,0.3)">
+            <p style="font-size:13px;color:var(--muted)">Scope</p>
+            <h3 style="margin-top:4px">Full AAM CNS Ecosystem Security</h3>
+            <p style="font-size:14px;color:var(--muted);margin-top:8px;line-height:1.6">From aircraft avionics to vertiport infrastructure — we analyze the complete communication, navigation &amp; surveillance stack.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="step anim-item" style="border-bottom:1px solid var(--border)">
+          <span class="step-num">01</span>
+          <div class="step-content">
+            <h3>Survey</h3>
+            <p style="font-size:14px;color:var(--muted);margin-top:4px;line-height:1.5">Map the entire threat landscape — assets, data flows, trust boundaries, and attack surfaces.</p>
+          </div>
+        </div>
+        <div class="step anim-item" style="border-bottom:1px solid var(--border)">
+          <span class="step-num" style="color:rgba(255,107,61,0.3)">02</span>
+          <div class="step-content">
+            <h3>Attack</h3>
+            <p style="font-size:14px;color:var(--muted);margin-top:4px;line-height:1.5">Design and simulate multi-vector attack frameworks — find the vulnerabilities before adversaries exploits them.</p>
+          </div>
+        </div>
+        <div class="step anim-item">
+          <span class="step-num" style="color:rgba(0,212,160,0.3)">03</span>
+          <div class="step-content">
+            <h3>Defend</h3>
+            <p style="font-size:14px;color:var(--muted);margin-top:4px;line-height:1.5">Develop detection and adaptive defense mechanisms to harden the system end-to-end.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SLIDE 4B: Survey Paper -->
+<div class="slide" id="s4a">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:620px;height:420px;top:4%;right:-120px;background:var(--accent)"></div>
+  <div class="wide-wrap">
+    <div class="eyebrow anim-item">Literature Review</div>
+    <h2 class="anim-item">Advanced Air Mobility Security Review</h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="grid-template-columns:0.92fr 1.08fr;align-items:center;margin-top:26px">
+      <div class="anim-item">
+        <div class="paper-shot">
+          <img src="paper_thumbnail.jpg" alt="">
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">Gharami et al., Preprint 2026</p>
+      </div>
+      <!-- Paper details -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="anim-item">
+          <!-- <h3 style="font-size:16px;color:var(--accent2);margin-bottom:6px">Advanced Air Mobility Security Review</h3> -->
+          <p style="font-size:14px;color:var(--muted);line-height:1.6">A CNS Perspective Taxonomy, Threat Landscape, and Defense Strategies — the <span class="accent-word">first comprehensive survey</span> unifying all AAM attack surfaces under one framework.</p>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(62,139,255,0.25)">
+            <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">What we covered</p>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot"></span><strong>Taxonomy</strong> — target, CNS function, attack vector, consequence</li>
+            <li><span class="dot"></span><strong>Threat landscape:</strong> — RF spoofing, TCAS, ADS-B, cellular, cloud, AI/ML, and vertiports.</li>
+              <li><span class="dot"></span><strong>Cross-layer propagation</strong> — how local faults cascade system-wide</li>
+              <li><span class="dot"></span><strong>Defense strategies</strong> — prevention, detection, containment, recovery</li>
+            </ul>
+          </div>
+        </div>
+        <div class="anim-item" style="display:flex;gap:10px;flex-wrap:wrap">
+          <div class="card" style="flex:1;min-width:120px;padding:14px">
+            <p style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent)">11</p>
+            <p style="font-size:11px;color:var(--muted);margin-top:2px">Surveys compared</p>
+          </div>
+          <div class="card" style="flex:1;min-width:120px;padding:14px">
+            <p style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent2)">8+</p>
+            <p style="font-size:11px;color:var(--muted);margin-top:2px">Attack classes mapped</p>
+          </div>
+          <div class="card" style="flex:1;min-width:120px;padding:14px">
+            <p style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--warn)">9</p>
+            <p style="font-size:11px;color:var(--muted);margin-top:2px">Coverage gaps our study closes</p>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(0,212,160,0.25);background:rgba(0,212,160,0.04)">
+            <!-- <p style="font-size:13px;color:var(--accent2);font-weight:500">Funded by Florida Department of Transportation (FDOT)</p> -->
+            <p style="font-size:13px;color:var(--muted);margin-top:4px">Authors: Gharami · Hakim · Mauro · Abram · Moni — Embry-Riddle Aeronautical University</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 4c: Survey — Key Findings ===================== -->
+<div class="slide" id="s4c">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:600px;height:300px;top:0;right:-100px;background:var(--accent2)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Survey Findings</div>
+    <h2 class="anim-item"><span class="accent2">Research Gaps</span> in Existing Literatures</h2>
+    <div class="divider anim-item"></div>
+    <div class="three-col" style="margin-top:24px">
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(255,107,61,0.25)">
+          <div class="icon-c" style="background:rgba(255,107,61,0.1);color:var(--accent3);margin-bottom:12px">⚡</div>
+          <h3 style="font-size:15px;margin-bottom:8px">Weak CNS Integration</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6">Communication, navigation, and surveillance studied in isolation. Their joint role in AAM safety was never addressed as a system.</p>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(255,179,71,0.25)">
+          <div class="icon-c" style="background:rgba(255,179,71,0.1);color:var(--warn);margin-bottom:12px">🔗</div>
+          <h3 style="font-size:15px;margin-bottom:8px">Limited Cross-Layer View</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6">Surveys listed threats but rarely explained how attacks propagate across components — how a GNSS spoof becomes a mid-air collision risk.</p>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(0,212,160,0.25)">
+          <div class="icon-c" style="background:rgba(0,212,160,0.1);color:var(--accent2);margin-bottom:12px">🏗</div>
+          <h3 style="font-size:15px;margin-bottom:8px">Infrastructure Ignored</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6">Vertiports, charging stations, and cloud-edge services — all on the safety path — received almost no coverage in prior work.</p>
+        </div>
+      </div>
+    </div>
+    <div class="anim-item" style="margin-top:16px">
+      <div class="card" style="border-color:rgba(62,139,255,0.3);background:rgba(62,139,255,0.04)">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="flex:1">
+            <p style="font-size:14px;color:var(--text);line-height:1.7"><span class="accent-word" style="font-weight:600">Our contribution:</span> The first survey with full coverage across all 9 dimensions — including CNS function, target space, attack vector, cross-layer propagation, vertiport, cloud, response, taxonomy, and evaluation.</p>
+          </div>
+          <div style="display:flex;gap:6px;flex-direction:column;flex-shrink:0">
+            <span class="tag tag-warn">✓ Threat Modeling</span>
+            <span class="tag tag-red">✓ Attack Views</span>
+            <span class="tag tag-green">✓ Defence Strategies</span>
+            <span class="tag tag-blue">✓ Future Directions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="anim-item" style="margin-top:14px;display:flex;gap:12px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--muted)">GPS spoofing ↑ <span class="warn">220%</span> (2021–2024) &nbsp;·&nbsp; United Airlines GNSS attack (2024) &nbsp;·&nbsp; Finnair suspends flights due to GPS outage &nbsp;·&nbsp; 600–800 AAM companies operating globally</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4D: Research Pipeline -->
+<div class="slide" id="s4c">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:650px;height:320px;top:45%;left:50%;transform:translate(-50%,-50%);background:var(--warn)"></div>
+  <div class="center-wrap">
+    <div class="eyebrow anim-item" style="justify-content:center;display:flex">Our research pipeline</div>
+    <h2 class="anim-item">Survey tells us <span class="warn">where to look</span><br>Experiments show us <span class="accent3">what can break</span></h2>
+    <div class="divider anim-item" style="margin:22px auto"></div>
+    <div class="timeline-mini">
+      <div class="card anim-item">
+        <div class="mini-label">Step 1</div>
+        <h3 style="margin-top:8px">Map</h3>
+        <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-top:8px">Build architecture, data-flow, and trust maps for AAM CNS.</p>
+      </div>
+      <div class="card anim-item" style="border-color:rgba(255,107,61,.25)">
+        <div class="mini-label">Step 2</div>
+        <h3 style="margin-top:8px">Pentest</h3>
+        <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-top:8px">Study high-impact attack vectors before they appear in real deployment.</p>
+      </div>
+      <div class="card anim-item" style="border-color:rgba(0,212,160,.25)">
+        <div class="mini-label">Step 3</div>
+        <h3 style="margin-top:8px">Defend</h3>
+        <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-top:8px">Design authentication, sensor cross-checking, and anomaly detection defenses.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5: Threat Model ===================== -->
+<div class="slide" id="s5">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:500px;bottom:-100px;right:-100px;background:var(--accent3)"></div>
+  <div style="max-width:900px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Attack Surface</div>
+    <h2 class="anim-item">Three critical <span class="accent3">threat vectors</span></h2>
+    <div class="divider anim-item"></div>
+    <div style="margin-top:24px">
+      <div class="anim-item" style="border:1px solid var(--border);border-radius:16px;overflow:hidden">
+        <div class="threat-row" style="padding:16px 20px">
+          <div class="icon-c" style="background:rgba(255,179,71,0.12);color:var(--warn);font-size:22px;width:48px;height:48px">⚠</div>
+          <div>
+            <h3>TCAS Manipulation</h3>
+            <p style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.6">Inject fake aircraft signals to trigger false collision alerts. Force unnecessary evasive maneuvers. Mislead traffic control with spoofed identity data.</p>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <span class="tag tag-warn">Signal Spoofing</span>
+              <span class="tag tag-warn">Traffic Deception</span>
+            </div>
+          </div>
+        </div>
+        <div class="threat-row" style="padding:16px 20px">
+          <div class="icon-c" style="background:rgba(255,107,61,0.12);color:var(--accent3);font-size:22px;width:48px;height:48px">📡</div>
+          <div>
+            <h3>Cellular Network Hijacking</h3>
+            <p style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.6">Deploy rogue base stations via SDR to intercept UAM/UTM communications. Execute man-in-the-middle attacks. Disrupt scheduling and command channels.</p>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <span class="tag tag-red">SDR Attack</span>
+              <span class="tag tag-red">MITM</span>
+              <span class="tag tag-red">Link Disruption</span>
+            </div>
+          </div>
+        </div>
+        <div class="threat-row" style="padding:16px 20px">
+          <div class="icon-c" style="background:rgba(62,139,255,0.12);color:var(--accent);font-size:22px;width:48px;height:48px">🏙</div>
+          <div>
+            <h3>Vertiport Infrastructure Attack</h3>
+            <p style="font-size:14px;color:var(--muted);margin-top:5px;line-height:1.6">Register fake vertiport entries to divert aircraft. Overwhelm real vertiport scheduling via DDoS. Create cascading failures across the urban airspace.</p>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <span class="tag tag-blue">Spoofed Registry</span>
+              <span class="tag tag-blue">DDoS</span>
+              <span class="tag tag-blue">Cascade Failure</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 5A: What is TCAS / ACAS ===================== -->
+<div class="slide" id="s5a">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:620px;height:420px;top:45%;left:50%;transform:translate(-50%,-50%);background:var(--accent)"></div>
+
+  <div style="max-width:980px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Before Threat Vector 01</div>
+    <h2 class="anim-item">What is <span class="accent-word">TCAS / ACAS?</span></h2>
+    <div class="divider anim-item"></div>
+
+    <div class="two-col" style="margin-top:26px;align-items:center">
+      <div class="anim-item">
+        <p class="subtitle" style="margin-top:0">
+          TCAS is the <span class="accent-word">aircraft collision avoidance system</span>. It continuously watches nearby aircraft and warns when another aircraft may become a collision risk.
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px">
+          <div class="card tcas-info-card">
+            <span class="tag tag-blue">Step 1</span>
+            <h3>Detect nearby traffic</h3>
+            <p>Aircraft exchange surveillance signals to estimate range, altitude, and relative movement.</p>
+          </div>
+
+          <div class="card tcas-info-card">
+            <span class="tag tag-warn">Step 2</span>
+            <h3>Issue advisory</h3>
+            <p>TCAS first gives a Traffic Advisory, then a Resolution Advisory if collision risk increases.</p>
+          </div>
+
+          <div class="card tcas-info-card">
+            <span class="tag tag-red">Step 3</span>
+            <h3>Command avoidance</h3>
+            <p>The aircraft may be instructed to climb, descend, or avoid the predicted conflict path.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="anim-item">
+        <div class="acas-scene">
+          <div class="acas-ring r1"></div>
+          <div class="acas-ring r2"></div>
+          <div class="acas-ring r3"></div>
+
+          <div class="acas-plane own">✈</div>
+          <div class="acas-plane intruder">✈</div>
+
+          <div class="acas-path own-path"></div>
+          <div class="acas-path intruder-path"></div>
+
+          <div class="acas-alert">COLLISION RISK</div>
+
+          <div class="acas-advisory climb">CLIMB ↑</div>
+          <div class="acas-advisory descend">DESCEND ↓</div>
+
+          <div class="tag tag-green" style="position:absolute;left:34%;top:44%">Ownship</div>
+          <div class="tag tag-red" style="position:absolute;right:9%;top:25%">Intruder</div>
+        </div>
+
+        <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px">
+          ACAS is the broader collision avoidance family. ACAS Xu is designed for unmanned aircraft.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5b: TCAS — Why AAM Is Different ===================== -->
+<div class="slide" id="s5b">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--warn)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Threat vector 01 · TCAS manipulation</div>
+    <h2 class="anim-item">AAM Makes the collision avoidance layer becomes an <span class="warn">attack surface</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,107,61,0.3)">
+            <h3 style="font-size:15px;color:var(--accent3);margin-bottom:10px">Traditional Aircraft — Hard to Reach</h3>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot" style="background:var(--accent2)"></span>Cruise altitude: <strong>9–12 km above ground</strong></li>
+              <li><span class="dot" style="background:var(--accent2)"></span>Physical security: <strong>speed of light constraint</strong></li>
+              <li><span class="dot" style="background:var(--accent2)"></span>Attacker must be within <strong>~4.2 km slant range</strong></li>
+              <li><span class="dot" style="background:var(--accent2)"></span>At 9 km altitude, ground attacker is <strong>mathematically impossible</strong> to reach within range</li>
+            </ul>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="eq-box">R = (c/2) × (ΔT − 128µs)&nbsp;&nbsp;&nbsp;Max range ≈ 4.2 km</div>
+          <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:4px">TCAS range equation — attacker limited by speed of light</p>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,179,71,0.35);background:rgba(255,107,61,0.07)">
+            <h3 style="font-size:15px;color:var(--warn);margin-bottom:10px">AAM / UAV — Trivially Within Range</h3>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot" style="background:var(--accent3)"></span>AAM altitude: <strong>150–1,500 m above ground</strong></li>
+              <li><span class="dot" style="background:var(--accent3)"></span>Dense urban corridors — <strong>attacker on a rooftop is enough</strong></li>
+              <li><span class="dot" style="background:var(--accent3)"></span>Slant range to AAM drone: <strong>&lt; 500 m typical</strong></li>
+              <li><span class="dot" style="background:var(--accent3)"></span>ACAS Xu (UAV version) inherits all TCAS II vulnerabilities</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- Animated diagram -->
+      <div class="anim-item" style="position:relative;height:360px">
+        <svg viewBox="0 0 300 360" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Ground -->
+          <rect x="0" y="300" width="300" height="60" fill="rgba(14,21,36,0.8)" rx="0"/>
+          <line x1="0" y1="300" x2="300" y2="300" stroke="rgba(62,139,255,0.2)" stroke-width="1"/>
+          <!-- Ground label -->
+          <text x="150" y="320" fill="#7a8ba8" font-size="10" text-anchor="middle" font-family="DM Sans">GROUND LEVEL</text>
+
+          <!-- Attacker on ground -->
+          <rect x="20" y="270" width="18" height="28" fill="rgba(255,107,61,0.3)" rx="3"/>
+          <circle cx="29" cy="262" r="8" fill="rgba(255,107,61,0.4)"/>
+          <text x="29" y="260" fill="#ff6b3d" font-size="8" text-anchor="middle">👤</text>
+          <text x="29" y="255" fill="#ffb347" font-size="8" text-anchor="middle" font-family="DM Sans">ATTACKER</text>
+          <text x="29" y="246" fill="#ff6b3d" font-size="7" text-anchor="middle" font-family="DM Sans">SDR</text>
+
+          <!-- Traditional airliner at ~9km (top of diagram = far) -->
+          <text x="250" y="30" fill="#e8edf5" font-size="16" text-anchor="middle">✈</text>
+          <text x="250" y="20" fill="#7a8ba8" font-size="8" text-anchor="middle" font-family="DM Sans">9,000 m alt</text>
+          <!-- Slant range indicator — traditional -->
+          <line x1="29" y1="258" x2="242" y2="38" stroke="rgba(0,212,160,0.25)" stroke-width="1" stroke-dasharray="4,4"/>
+          <text x="130" y="150" fill="rgba(0,212,160,0.5)" font-size="9" text-anchor="middle" transform="rotate(-55,130,150)" font-family="DM Sans">≈ 9,000+ m slant range</text>
+          <text x="220" y="72" fill="#00d4a0" font-size="9" font-family="DM Sans">OUT OF</text>
+          <text x="220" y="82" fill="#00d4a0" font-size="9" font-family="DM Sans">RANGE ✓</text>
+
+          <!-- AAM drone at ~400m -->
+          <text x="200" y="210" fill="#ffb347" font-size="16" text-anchor="middle" style="animation:float 2s ease-in-out infinite">🚁</text>
+          <text x="200" y="198" fill="#7a8ba8" font-size="8" text-anchor="middle" font-family="DM Sans">400 m alt</text>
+
+          <!-- Slant range indicator — AAM -->
+          <line x1="29" y1="270" x2="192" y2="212" stroke="rgba(255,107,61,0.6)" stroke-width="2" stroke-dasharray="5,3">
+            <animate attributeName="stroke-dashoffset" from="0" to="-30" dur="1s" repeatCount="indefinite"/>
+          </line>
+
+          <!-- Range circle around attacker -->
+          <circle cx="29" cy="270" r="68" fill="none" stroke="rgba(255,107,61,0.15)" stroke-width="1.5" stroke-dasharray="4,4"/>
+          <text x="100" y="295" fill="rgba(255,107,61,0.6)" font-size="8" font-family="DM Sans">4.2 km range</text>
+
+          <!-- Attack signal to AAM -->
+          <text x="105" y="238" fill="#ff6b3d" font-size="9" font-family="DM Sans" font-weight="600">WITHIN</text>
+          <text x="105" y="248" fill="#ff6b3d" font-size="9" font-family="DM Sans" font-weight="600">RANGE ⚠</text>
+
+          <!-- Vertical scale -->
+          <line x1="275" y1="30" x2="275" y2="298" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <text x="285" y="34" fill="#7a8ba8" font-size="7" font-family="DM Sans">High alt</text>
+          <text x="285" y="295" fill="#7a8ba8" font-size="7" font-family="DM Sans">Low alt</text>
+        </svg>
+
+        <div class="anim-item radar-stage">
+          <div class="radar-sweep"></div>
+          <div class="aircraft-dot" style="left:48%;top:48%"></div>
+          <div class="aircraft-dot red" style="left:69%;top:33%"></div>
+          <div class="aircraft-dot" style="left:26%;top:66%"></div>
+          <div class="tag tag-warn" style="position:absolute;left:58%;top:22%">False intruder</div>
+          <div class="tag tag-green" style="position:absolute;left:38%;top:58%">Ownship</div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5c: TCAS Attack Mechanics ===================== -->
+<div class="slide" id="s5c">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:400px;bottom:0;right:-100px;background:var(--accent3)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">TCAS Attack Mechanics</div>
+    <h2 class="anim-item">Three Ways to <span class="accent3">Force a Collision Course</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="three-col" style="margin-top:22px">
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(255,179,71,0.3)">
+          <div style="font-size:24px;margin-bottom:10px">🎯</div>
+          <h3 style="font-size:15px;color:var(--warn);margin-bottom:8px">Traffic Advisory Injection</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px">Spoof a ghost aircraft into the TCAS traffic display. Pilot/autopilot sees an intruder that does not exist — yellow "TRAFFIC" alert fires.</p>
+          <div class="eq-box" style="font-size:12px">T_response &lt; 128µs<br>Ghost at ≤ 0.30 nm</div>
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="tag tag-warn" style="font-size:11px">TA triggered</span>
+            <span class="tag tag-warn" style="font-size:11px">Aural alert</span>
+          </div>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(255,107,61,0.4);background:rgba(255,107,61,0.04)">
+          <div style="font-size:24px;margin-bottom:10px">🔴</div>
+          <h3 style="font-size:15px;color:var(--accent3);margin-bottom:8px">Resolution Advisory Injection</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px">Escalate to a red RA — command the aircraft to CLIMB or DESCEND. In modern aircraft, autopilot executes automatically, <em>bypassing the pilot.</em></p>
+          <div class="eq-box" style="font-size:12px">VCPA &lt; ALIM → RA issued<br>Sense: ↑ CLIMB or ↓ DESCEND</div>
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="tag tag-red" style="font-size:11px">RA injected</span>
+            <span class="tag tag-red" style="font-size:11px">Autopilot override</span>
+          </div>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(62,139,255,0.3)">
+          <div style="font-size:24px;margin-bottom:10px">🚫</div>
+          <h3 style="font-size:15px;color:var(--accent);margin-bottom:8px">RA Denial-of-Service</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px">Impersonate a ground station, send an unauthenticated SLC command. TCAS silently switches to TA-only mode — <em>all collision avoidance disabled.</em></p>
+          <div class="eq-box" style="font-size:12px">SLC message (UF=21)<br>No auth required → SL=2</div>
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="tag tag-blue" style="font-size:11px">TCAS disabled</span>
+            <span class="tag tag-blue" style="font-size:11px">240s persist</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="anim-item" style="margin-top:16px">
+      <div class="card" style="border-color:rgba(255,179,71,0.25);background:rgba(255,179,71,0.04)">
+        <p style="font-size:13px;color:var(--muted);line-height:1.6"><span class="warn">USENIX Security 2024 (Longo et al.):</span> First working RF attacks on certified TCAS hardware proven with COTS SDR (~$10k). Attack range up to <strong style="color:#fff">4.2 km</strong>. Success rate ~80% for RA injection within 16 seconds. For AAM flying below 500m, a rooftop attacker trivially satisfies this constraint.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5d: TCAS — AAM Collision Impact ===================== -->
+<div class="slide" id="s5d">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:600px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent3)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">TCAS Attack Impact on AAM</div>
+    <h2 class="anim-item">False RA → Dangerous <span class="accent3">Trajectory & Collision</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:22px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,107,61,0.3)">
+            <h3 style="font-size:14px;color:var(--accent3);margin-bottom:10px">Why It's Worse for Drones &amp; eVTOL</h3>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot" style="background:var(--accent3)"></span>Dense low-altitude corridors — <strong>tight vertical separation</strong></li>
+              <li><span class="dot" style="background:var(--accent3)"></span>Autonomous operation — <strong>no pilot to override a bad RA</strong></li>
+              <li><span class="dot" style="background:var(--accent3)"></span>ACAS Xu (UAV version) inherits TCAS II vuln with no fix yet</li>
+              <li><span class="dot" style="background:var(--accent3)"></span>A false DESCEND RA at 200m altitude → <strong>ground impact</strong></li>
+              <li><span class="dot" style="background:var(--accent3)"></span>A false CLIMB RA → collision with adjacent corridor traffic</li>
+            </ul>
+          </div>
+        </div>
+
+       
+      </div>
+      <!-- JS animated collision diagram -->
+      <div class="anim-item">
+        <div style="position:relative;height:340px;background:rgba(14,21,36,0.5);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <canvas id="tcasCanvas" width="400" height="340" style="width:100%;height:100%"></canvas>
+          <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted)">Animated: Normal trajectory vs. forced RA maneuver</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5d-exp: Experimental Outcome — Simulators ===================== -->
+<div class="slide" id="s5d_exp">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent3)"></div>
+  <div class="wide-wrap">
+    <div class="eyebrow anim-item">Experimental Outcome · Simulator Results</div>
+    <h2 class="anim-item"><span class="accent3">ACAS & TCAS</span> Simulation Dashboard</h2>
+    <div class="divider anim-item"></div>
+
+    <div class="two-col exp-img-row anim-item" style="margin-top:24px;align-items:start">
+
+      <div class="exp-img-card">
+        <div class="exp-img-label">
+          <span class="tag tag-warn" style="font-size:11px">① TCAS-style Front End + ACAS Xu</span>
+        </div>
+        <img src="tcas.png" alt="TCAS-style ACAS Xu Simulator — Advisory: Strong Right">
+        <p class="exp-img-caption">
+          TCAS inputs (range, bearing, heading, altitude) are translated into ACAS Xu state variables.
+          The spoofed scenario drives the network to output
+          <strong style="color:#fff">Advisory: Strong Right</strong> (score −2.34) —
+          an aggressive lateral maneuver that, at low altitude, risks corridor exit or mid-air conflict.
+        </p>
+      </div>
+
+      <div class="exp-img-card">
+        <div class="exp-img-label">
+          <span class="tag tag-green" style="font-size:11px">② HorizontalCAS Neural Network Direct Query</span>
+        </div>
+        <img src="acas.png" alt="HorizontalCAS Neural Network Simulator — Advisory: COC">
+        <p class="exp-img-caption">
+          The same geometry queried directly (ψ = 180°, τ = 0 s, no prior advisory) returns
+          <strong style="color:#fff">Advisory: COC</strong> (score −2.26).
+          The divergence between ① and ② isolates the TCAS front-end translation layer
+          as the attack surface — the network itself is not compromised, the input state is.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="anim-item" style="margin-top:18px">
+      <div class="card" style="border-color:rgba(255,107,61,0.3);background:rgba(255,107,61,0.05)">
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;text-align:center">
+          <span class="accent3">Key finding:</span>
+          Injecting a false intruder via SDR shifts the ACAS Xu input state enough to flip
+          the advisory from safe <strong style="color:#fff">COC</strong> to an evasive
+          <strong style="color:#fff">Strong Right</strong> — without touching the neural network weights.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 5d-vid: Experimental Outcome — Gazebo Video ===================== -->
+<div class="slide" id="s5d_vid">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:560px;height:440px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent3)"></div>
+  <div class="wide-wrap">
+    <div class="eyebrow anim-item">Experimental Outcome · Gazebo / ROS Simulation</div>
+    <h2 class="anim-item">False RA in Motion: <span class="accent3">Collision Trajectory</span></h2>
+    <div class="divider anim-item"></div>
+
+    <div class="anim-item" style="margin-top:22px">
+      <div class="video-frame">
+        <video autoplay muted loop playsinline controls preload="auto">
+          <source src="GazeboSimulation.mp4" type="video/mp4">
+        </video>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">
+        Gazebo ROS simulation — autonomous drone executing forced RA maneuver toward collision
+      </p>
+    </div>
+
+    <div class="two-col anim-item" style="margin-top:18px;max-width:980px">
+      <div class="card" style="border-color:rgba(255,107,61,0.3)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div class="icon-c" style="background:rgba(255,107,61,0.12);color:var(--accent3)">🚁</div>
+          <h3 style="font-size:14px;color:var(--accent3)">What the simulation shows</h3>
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">
+          A drone flying a nominal corridor path receives a spoofed
+          <strong style="color:#fff">Strong Right</strong> advisory via the injected TCAS signal.
+          The autonomous flight controller executes the maneuver immediately —
+          no human override, no sanity check.
+        </p>
+      </div>
+      <div class="card" style="border-color:rgba(255,179,71,0.3);background:rgba(255,179,71,0.04)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div class="icon-c" style="background:rgba(255,179,71,0.12);color:var(--warn)">⚠️</div>
+          <h3 style="font-size:14px;color:var(--warn)">Why it matters at low altitude</h3>
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">
+          At AAM operating altitudes (150–500 m), a lateral diversion of this magnitude
+          exits the designated corridor within seconds, entering adjacent traffic lanes
+          or obstacle-dense urban airspace with no recovery margin.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5e: TCAS Defence ===================== -->
+<div class="slide" id="s5e">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:400px;top:0;left:-100px;background:var(--accent2)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">TCAS Defence Strategies</div>
+    <h2 class="anim-item">Defending Against <span class="accent2">Collision Attacks</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(0,212,160,0.3)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div class="icon-c" style="background:rgba(0,212,160,0.12);color:var(--accent2)">🔐</div>
+              <h3 style="font-size:15px">Mutual Authentication</h3>
+            </div>
+            <p style="font-size:13px;color:var(--muted);line-height:1.6">Cryptographic binding between transponder identity and broadcast — rejects unauthenticated SLC ground commands. OSNMA (Galileo) shows this is feasible at receiver level.</p>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(62,139,255,0.3)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div class="icon-c" style="background:rgba(62,139,255,0.12);color:var(--accent)">📐</div>
+              <h3 style="font-size:15px">Angle of Arrival Cross-Check</h3>
+            </div>
+            <p style="font-size:13px;color:var(--muted);line-height:1.6">Verify declared altitude against measured vertical angle of arrival. An attacker on the ground claiming to be above the aircraft is immediately detectable — no protocol change needed.</p>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,179,71,0.3)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div class="icon-c" style="background:rgba(255,179,71,0.12);color:var(--warn)">📡</div>
+              <h3 style="font-size:15px">Doppler Closure-Rate Validation</h3>
+            </div>
+            <p style="font-size:13px;color:var(--muted);line-height:1.6">Estimated closure rate from Doppler shift must match TCAS-reported closure rate. Stationary ground attacker cannot fake a believable Doppler signature of a moving aircraft.</p>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(62,139,255,0.2)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div class="icon-c" style="background:rgba(62,139,255,0.12);color:var(--accent)">🤝</div>
+              <h3 style="font-size:15px">UTM Plausibility Check</h3>
+            </div>
+            <p style="font-size:13px;color:var(--muted);line-height:1.6">Cross-reference TCAS intruder identity against UTM traffic picture. An intruder not registered in UTM is flagged before the RA is acted on.</p>
+          </div>
+        </div>
+  
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="anim-item drone-scene">
+          <div class="flight-icon" style="left:43%;top:38%">🛸</div>
+          <div class="sensor-fan" style="left:35%;top:20%;transform:rotate(0deg)"></div>
+          <div class="sensor-fan" style="left:42%;top:38%;background:linear-gradient(0deg,rgba(62,139,255,.20),transparent);animation-delay:.7s"></div>
+          <div class="tag tag-green" style="position:absolute;left:14%;top:18%">camera / LiDAR</div>
+          <div class="tag tag-blue" style="position:absolute;right:10%;top:42%">cross-check</div>
+          <div class="tag tag-warn" style="position:absolute;left:37%;bottom:18%">TCAS signal</div>
+        </div>
+
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(0,212,160,0.2)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div class="icon-c" style="background:rgba(0,212,160,0.12);color:var(--accent2)">👁</div>
+              <h3 style="font-size:15px">Multi-Sensor Fusion</h3>
+            </div>
+            <p style="font-size:13px;color:var(--muted);line-height:1.6">Cross-validate TCAS intruder with: <strong style="color:var(--text)">LiDAR, ultrasonic sensors, camera-based detection</strong>. Ghost aircraft that exists only in TCAS but not in onboard perception = spoofed.</p>
+            <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+              <span class="tag tag-green" style="font-size:11px">LiDAR</span>
+              <span class="tag tag-green" style="font-size:11px">Ultrasonic</span>
+              <span class="tag tag-green" style="font-size:11px">Camera DAA</span>
+            </div>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,107,61,0.2);background:rgba(255,107,61,0.04)">
+            <p style="font-size:13px;color:var(--muted);line-height:1.6"><span class="accent3">Our research extends</span> the USENIX 2024 findings specifically to the AAM threat model, quantifying how low-altitude dense operations amplify attack feasibility and impact.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SLIDE 5J: Cellular Intro -->
+<div class="slide" id="s5j">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:560px;height:520px;top:0;right:-120px;background:var(--accent3)"></div>
+  <div class="wide-wrap">
+    <div class="eyebrow anim-item">Threat vector 02 · Cellular network hijacking</div>
+    <h2 class="anim-item">AAM may depend on cellular links for <span class="accent3">control and coordination</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="align-items:center;margin-top:26px">
+      <div class="anim-item">
+        <p class="subtitle" style="margin-top:0">Future AAM systems may use 4G, 5G, and 6G connectivity for telemetry, UTM coordination, cloud services, and backup command channels.</p>
+        <div class="card" style="margin-top:18px;border-color:rgba(255,107,61,.25)">
+          <ul class="blist">
+            <li>
+              <span class="dot" style="background:var(--accent3)"></span>
+              Satellite coverage may be unreliable in dense urban environments.
+            </li>
+
+            <li>
+              <span class="dot" style="background:var(--accent3)"></span>
+              4G/5G infrastructure already exists in cities.
+            </li>
+
+            <li>
+              <span class="dot" style="background:var(--accent3)"></span>
+              Low-latency links are important as coordination/backup option.
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="anim-item tower-scene">
+        <div class="tower" style="left:15%;color:var(--accent)">📶</div>
+        <div class="tower" style="right:15%;color:var(--accent2)">🛸</div>
+        <div class="signal-ring" style="left:9%;bottom:20px;width:110px;height:110px"></div>
+        <div class="signal-ring" style="left:9%;bottom:20px;width:110px;height:110px;animation-delay:.7s"></div>
+        <div class="data-packet"></div>
+        <div class="tag tag-blue" style="position:absolute;left:10%;top:18%">cell tower</div>
+        <div class="tag tag-green" style="position:absolute;right:12%;top:18%">AAM aircraft</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5f: Cellular Hijacking — Detail ===================== -->
+<div class="slide" id="s5f">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:600px;height:400px;bottom:-100px;right:-100px;background:var(--accent3)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Cellular Network Hijacking · Deep Dive</div>
+    <h2 class="anim-item">Taking Over the <span class="accent3">C2 Link</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:22px;align-items:start">
+      <!-- Attack vectors list -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,107,61,0.3)">
+            <h3 style="font-size:14px;color:var(--accent3);margin-bottom:10px">Attack Vectors (Under Research)</h3>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>Rogue Base Station (IMSI Catcher)</strong> — stronger fake cell attracts UAM modem</li>
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>2G/3G Downgrade</strong> — force aircraft to connect to unencrypted legacy network</li>
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>Man-in-the-Middle</strong> — intercept, replay, or inject C2 commands</li>
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>Selective Jamming</strong> — block specific frequencies at handover windows</li>
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>Null-Cipher Negotiation</strong> — exploit weak session key binding</li>
+            </ul>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="eq-box">
+            c* attracts UAM if: P* &gt; P_c0 + ΔHysteresis<br>
+            Inject ũ_k if: k_mac = ∅ (no MAC check)
+          </div>
+          <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">Rogue cell selection and command injection model</p>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,179,71,0.25);background:rgba(255,179,71,0.04)">
+            <p style="font-size:13px;color:var(--muted);line-height:1.6"><span class="warn">Key risk:</span> Dense AAM corridors with frequent handovers — <em>every handover is an attack window.</em> 5G network slicing and edge services expand the surface beyond the radio link.</p>
+          </div>
+        </div>
+      </div>
+      <!-- Animated cell tower diagram -->
+      <div class="anim-item" style="position:relative">
+        <div style="height:320px;background:rgba(14,21,36,0.5);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative">
+          <canvas id="cellCanvas" width="400" height="320" style="width:100%;height:100%"></canvas>
+          <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted)">Animated: Legitimate tower vs rogue base station attack</div>
+        </div>
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="card" style="padding:12px;border-color:rgba(0,212,160,0.2)">
+            <p style="font-size:11px;color:var(--muted)">Legitimate cell</p>
+            <p style="font-size:13px;color:var(--accent2);font-weight:600">Authenticated C2</p>
+          </div>
+          <div class="card" style="padding:12px;border-color:rgba(255,107,61,0.3);background:rgba(255,107,61,0.05)">
+            <p style="font-size:11px;color:var(--muted)">Rogue base station</p>
+            <p style="font-size:13px;color:var(--accent3);font-weight:600">Command injection</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5g: Cellular Defence ===================== -->
+<div class="slide" id="s5g">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:400px;top:0;right:-100px;background:var(--accent)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Cellular Hijacking · Defences</div>
+    <h2 class="anim-item">Securing the <span class="accent-word">C2 Link</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="three-col" style="margin-top:24px">
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(62,139,255,0.3)">
+          <div class="icon-c" style="background:rgba(62,139,255,0.12);color:var(--accent);margin-bottom:12px">🔑</div>
+          <h3 style="font-size:14px;margin-bottom:8px">Mutual TLS + HMAC</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6">Require mutual authentication on all C2 sessions. HMAC freshness check with sequence numbers — replay and injection fail without valid keys.</p>
+          <div class="eq-box" style="font-size:11px;margin-top:10px">valid ⟺ HMAC(u_k||seq) = tag_k ∧ seq &gt; seq_last</div>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(0,212,160,0.3)">
+          <div class="icon-c" style="background:rgba(0,212,160,0.12);color:var(--accent2);margin-bottom:12px">🗼</div>
+          <h3 style="font-size:14px;margin-bottom:8px">Cell Tower Fingerprinting</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6">Whitelist known legitimate base stations by physical-layer signature. Unexpected stronger cell triggers an alert before reselection occurs.</p>
+        </div>
+      </div>
+      <div class="anim-item">
+        <div class="card" style="height:100%;border-color:rgba(255,179,71,0.3)">
+          <div class="icon-c" style="background:rgba(255,179,71,0.12);color:var(--warn);margin-bottom:12px">⛔</div>
+          <h3 style="font-size:14px;margin-bottom:8px">Downgrade Prevention</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6">Lock C2 modem to 4G/5G only — refuse 2G/3G fallback. Any forced downgrade is treated as an active attack, not a service gap.</p>
+        </div>
+      </div>
+    </div>
+    <div class="anim-item" style="margin-top:14px">
+      <div class="card" style="border-color:rgba(0,212,160,0.2);background:rgba(0,212,160,0.04)">
+        <p style="font-size:13px;color:var(--muted);line-height:1.6"><span class="accent2">SPIRE Lab research in progress:</span> Actively testing rogue base station attacks against UAM C2 links in our lab environment. Combining SDR-based IMSI catchers with AAM flight stack simulators (PX4 SITL + Gazebo) to measure attack feasibility and validate defences.</p>
+      </div>
+    </div>
+    <div class="anim-item" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <span class="tag tag-blue">5G Network Slicing Isolation</span>
+      <span class="tag tag-green">Zero Trust on C2 Path</span>
+      <span class="tag tag-warn">Anomaly Detection at Handover</span>
+      <span class="tag tag-blue">Satellite C2 Fallback</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 5h: Vertiport & Charging Attacks ===================== -->
+<div class="slide" id="s5h">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:500px;height:400px;bottom:-100px;left:-100px;background:var(--accent)"></div>
+  <div style="max-width:960px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Vertiport &amp; Charging Infrastructure</div>
+    <h2 class="anim-item">The Ground is <span class="accent-word">Also Under Attack</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(62,139,255,0.3)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div class="icon-c" style="background:rgba(62,139,255,0.12);color:var(--accent)">🏙</div>
+              <h3 style="font-size:14px">Vertiport Scheduling Attacks</h3>
+            </div>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot"></span><strong>Slot flooding</strong> — exhaust all landing pads with fake reservations</li>
+              <li><span class="dot"></span><strong>Queue poisoning</strong> — corrupt priority values, disrupt safe sequencing</li>
+              <li><span class="dot"></span><strong>Replay booking</strong> — block slots via nonce-less reservation replay</li>
+              <li><span class="dot"></span><strong>Optimizer spoofing</strong> — inject false sensor data into scheduling AI</li>
+            </ul>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,107,61,0.3);background:rgba(255,107,61,0.04)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div class="icon-c" style="background:rgba(255,107,61,0.12);color:var(--accent3)">⚡</div>
+              <h3 style="font-size:14px;color:var(--accent3)">Charging Port Attacks</h3>
+            </div>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>OCPP payload manipulation</strong> — alter charging parameters (similar to Tesla charging port attacks)</li>
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>False charge complete</strong> — aircraft dispatched with low battery → unsafe launch</li>
+              <li><span class="dot" style="background:var(--accent3)"></span><strong>Power load manipulation</strong> — destabilize facility power grid</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(0,212,160,0.3)">
+            <h3 style="font-size:14px;color:var(--accent2);margin-bottom:10px">Defence Approaches</h3>
+            <ul class="blist" style="margin-top:0">
+              <li><span class="dot" style="background:var(--accent2)"></span><strong>Rate limiting &amp; nonce-based booking</strong> — block slot flooding</li>
+              <li><span class="dot" style="background:var(--accent2)"></span><strong>MFA/RBAC on operator portals</strong> — prevent credential theft</li>
+              <li><span class="dot" style="background:var(--accent2)"></span><strong>Anomaly detection on OCPP</strong> — flag abnormal charge patterns</li>
+              <li><span class="dot" style="background:var(--accent2)"></span><strong>Independent battery readout</strong> — verify charge state before dispatch</li>
+              <li><span class="dot" style="background:var(--accent2)"></span><strong>Encrypted Modbus/DNP3</strong> — protect grid interface protocols</li>
+            </ul>
+          </div>
+        </div>
+        <div class="anim-item">
+          <div class="card" style="border-color:rgba(255,179,71,0.25);background:rgba(255,179,71,0.04)">
+            <p style="font-size:13px;color:var(--muted);line-height:1.6"><span class="warn">Research context:</span> EV charging exploits (Tesla, OCPP 2.0.1 attacks) have already been demonstrated. eVTOL charging uses the same protocol family — with aircraft safety consequences.</p>
+          </div>
+        </div>
+        <div class="anim-item" style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="tag tag-blue">OCPP 2.0.1</span>
+          <span class="tag tag-warn">Modbus/TCP</span>
+          <span class="tag tag-blue">DNP3</span>
+          <span class="tag tag-red">Under Lab Research</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 6: Defense ===================== -->
+<div class="slide" id="s6">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:600px;height:400px;top:0;right:-50px;background:var(--accent2)"></div>
+  <div style="max-width:900px;width:100%;position:relative;z-index:2">
+    <div class="eyebrow anim-item">Defense</div>
+    <h2 class="anim-item">Building an <span class="accent2">Adaptive Shield</span></h2>
+    <div class="divider anim-item"></div>
+    <div class="two-col" style="margin-top:28px">
+      <div class="anim-item">
+        <div class="card" style="border-color:rgba(0,212,160,0.2);height:100%">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div class="icon-c" style="background:rgba(0,212,160,0.12);color:var(--accent2)">🔍</div>
+            <h3>Detection Framework</h3>
+          </div>
+          <ul class="blist">
+            <li><span class="dot" style="background:var(--accent2)"></span>Anomalous aircraft identity &amp; position reports</li>
+            <li><span class="dot" style="background:var(--accent2)"></span>False TCAS alert pattern recognition</li>
+            <li><span class="dot" style="background:var(--accent2)"></span>Fake base-station fingerprinting</li>
+            <li><span class="dot" style="background:var(--accent2)"></span>Suspicious vertiport scheduling requests</li>
+            <li><span class="dot" style="background:var(--accent2)"></span>DDoS traffic spike detection</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card anim-item">
+          <h3 style="font-size:15px;margin-bottom:6px">Multi-vector awareness</h3>
+          <p style="font-size:14px;color:var(--muted);line-height:1.6">Monitor across all attack surfaces simultaneously — not just one channel at a time.</p>
+        </div>
+        <div class="card anim-item">
+          <h3 style="font-size:15px;margin-bottom:6px">Real-time validation</h3>
+          <p style="font-size:14px;color:var(--muted);line-height:1.6">Tested and validated in live simulations — not just theoretical models.</p>
+        </div>
+        <div class="card anim-item" style="border-color:rgba(0,212,160,0.25);background:rgba(0,212,160,0.05)">
+          <h3 style="font-size:15px;margin-bottom:6px;color:var(--accent2)">Open guidance</h3>
+          <p style="font-size:14px;color:var(--muted);line-height:1.6">Findings published to guide infrastructure developers building the AAM ecosystem <em>right now.</em></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 7: Closing ===================== -->
+<div class="slide" id="s7">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:700px;height:700px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent)"></div>
+  <div style="max-width:800px;width:100%;position:relative;z-index:2;text-align:center">
+    <div class="eyebrow anim-item" style="justify-content:center;display:flex">SPIRE Lab — Securing Tomorrow's Skies</div>
+    <h1 class="anim-item" style="margin-top:16px">The sky is <span class="accent-word">open.</span><br>Let's keep it <span class="accent2">safe.</span></h1>
+    <div class="divider anim-item" style="margin:24px auto"></div>
+    <p class="subtitle anim-item" style="margin:0 auto;font-size:17px">AAM will carry passengers, cargo, and critical medical supplies above our cities. Getting the security right — before large-scale deployment — is not optional. It is essential.</p>
+    <div class="anim-item" style="margin-top:40px;display:flex;justify-content:center;gap:14px;flex-wrap:wrap">
+      <div class="card" style="text-align:left;flex:1;min-width:200px;max-width:240px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Survey</p>
+        <p style="font-size:14px;color:var(--text);line-height:1.5">Full threat landscape mapping of the AAM CNS stack</p>
+      </div>
+      <div class="card" style="text-align:left;flex:1;min-width:200px;max-width:240px;border-color:rgba(255,107,61,0.25)">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Attack</p>
+        <p style="font-size:14px;color:var(--text);line-height:1.5">Multi-vector simulation across TCAS, cellular, and vertiport systems</p>
+      </div>
+      <div class="card" style="text-align:left;flex:1;min-width:200px;max-width:240px;border-color:rgba(0,212,160,0.25)">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Defend</p>
+        <p style="font-size:14px;color:var(--text);line-height:1.5">Adaptive detection frameworks published for the developer community</p>
+      </div>
+    </div>
+    <p class="anim-item" style="margin-top:36px;font-size:13px;color:var(--muted)">Pentesting the AAM CNS Ecosystem: Multi-Vector Attacks and Adaptive Defense</p>
+  </div>
+</div>
+
+<!-- ===================== SLIDE 8: Meet Our Team ===================== -->
+<div class="slide" id="s8">
+  <div class="grid-bg"></div>
+  <div class="glow" style="width:600px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent)"></div>
+  <div style="max-width:1000px;width:100%;position:relative;z-index:2">
+
+    <div class="eyebrow anim-item">Meet Our Team</div>
+    <!-- <h2 class="anim-item" style="margin-bottom:8px">The People Behind <span class="accent-word">SPIRE Lab</span></h2> -->
+    <p class="anim-item" style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5">Embry-Riddle Aeronautical University · Daytona Beach, FL</p>
+
+    <!-- ONE shared grid — PI spans all 3 cols, students each get 1 -->
+    <div class="anim-item" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;width:100%">
+
+      <!-- PI card — spans full width -->
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:24px;
+                  background:rgba(62,139,255,0.06);border:1px solid rgba(62,139,255,0.4);
+                  border-radius:16px;padding:22px 28px">
+        <div class="team-photo" style="width:90px;height:90px;flex-shrink:0;
+                                       border-color:var(--accent);
+                                       box-shadow:0 0 0 3px rgba(62,139,255,0.15)">
+          <img src="moni.PNG" alt="Shafika Showkat Moni" style="width:100%;height:100%;object-fit:cover">
+        </div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <h3 style="font-size:17px">Shafika Showkat Moni</h3>
+            <span class="tag tag-blue" style="font-size:11px">Principal Investigator</span>
+          </div>
+          <p style="font-size:14px;color:var(--accent2);margin-bottom:4px">Assistant Professor of Cybersecurity</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px">Department of EECS · Embry-Riddle Aeronautical University</p>
+          <p style="font-size:13px;color:var(--muted)">📧 <a href="mailto:monis@erau.edu" style="color:var(--accent);text-decoration:none">monis@erau.edu</a></p>
+        </div>
+      </div>
+
+      <!-- Kanchon Gharami -->
+      <div class="team-card">
+        <div class="team-photo">
+          <img src="kanchon2.png" alt="Kanchon Gharami">
+        </div>
+        <h3 style="font-size:14px;margin-bottom:4px">Kanchon Gharami</h3>
+        <p style="font-size:12px;color:var(--accent);margin-bottom:2px">PhD Student</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Department of EECS</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Embry-Riddle Aeronautical University</p>
+        <p style="font-size:11px;color:var(--muted)">📧 <a href="mailto:gharamik@my.erau.edu" style="color:var(--accent);text-decoration:none">gharamik@my.erau.edu</a></p>
+      </div>
+
+      <!-- Luke M. Mauro -->
+      <div class="team-card">
+        <div class="team-photo">
+          <img src="luke.jpg" alt="Luke M. Mauro">
+        </div>
+        <h3 style="font-size:14px;margin-bottom:4px">Luke M. Mauro</h3>
+        <p style="font-size:12px;color:var(--accent);margin-bottom:2px">Graduate Student</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Department of EECS</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Embry-Riddle Aeronautical University</p>
+        <p style="font-size:11px;color:var(--muted)">📧 <a href="mailto:maurol@my.erau.edu" style="color:var(--accent);text-decoration:none">maurol@my.erau.edu</a></p>
+      </div>
+
+      <!-- Myles L. Abram -->
+      <div class="team-card">
+        <div class="team-photo">
+          <img src="myles.jpeg" alt="Myles L. Abram">
+        </div>
+        <h3 style="font-size:14px;margin-bottom:4px">Myles L. Abram</h3>
+        <p style="font-size:12px;color:var(--accent);margin-bottom:2px">Undergraduate Student</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Dept. of Aerospace Engineering</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Embry-Riddle Aeronautical University</p>
+        <p style="font-size:11px;color:var(--muted)">📧 <a href="mailto:abramm1@my.erau.edu" style="color:var(--accent);text-decoration:none">abramm1@my.erau.edu</a></p>
+      </div>
+
+    </div><!-- end shared grid -->
+  </div>
+</div>
+
+<!-- ===================== NAV ===================== -->
+<div id="nav">
+  <button class="nav-btn" id="prevBtn" disabled onclick="navigate(-1)">&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <span id="slide-counter">1 / 17</span>
+  <button class="nav-btn" id="nextBtn" onclick="navigate(1)">&#8594;</button>
+</div>
+<div id="hint">← → or click dots to navigate</div>
+
+<script>
+// ============ Navigation ============
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+let animating = false;
+
+const dotsEl = document.getElementById('dots');
+const counter = document.getElementById('slide-counter');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot-nav' + (i === 0 ? ' on' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function updateNav() {
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === total - 1;
+  counter.textContent = (current + 1) + ' / ' + total;
+  document.querySelectorAll('.dot-nav').forEach((d, i) => d.classList.toggle('on', i === current));
+}
+
+function goTo(idx, dir) {
+  if (animating || idx === current) return;
+  animating = true;
+  const goingForward = dir !== undefined ? dir > 0 : idx > current;
+  const oldSlide = slides[current];
+  const newSlide = slides[idx];
+  oldSlide.style.animation = 'none';
+  newSlide.style.animation = 'none';
+  newSlide.classList.remove('active');
+  requestAnimationFrame(() => {
+    oldSlide.style.animation = goingForward
+      ? 'slideOut 0.35s cubic-bezier(0.55,0,1,0.45) forwards'
+      : 'slideOutBack 0.35s cubic-bezier(0.55,0,1,0.45) forwards';
+    oldSlide.classList.remove('active');
+    setTimeout(() => {
+      newSlide.style.animation = goingForward
+        ? 'slideIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards'
+        : 'slideInBack 0.45s cubic-bezier(0.22,1,0.36,1) forwards';
+      newSlide.classList.add('active');
+      current = idx;
+      updateNav();
+      if (idx === 9) startTCASCanvas();
+      if (idx === 11) startCellCanvas();
+      setTimeout(() => { animating = false; }, 460);
+    }, 360);
+  });
+}
+
+function navigate(dir) {
+  const next = current + dir;
+  if (next < 0 || next >= total) return;
+  goTo(next, dir);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) navigate(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+// // ============ TCAS Canvas Animation ============
+// let tcasRAF;
+// function startTCASCanvas() {
+//   const canvas = document.getElementById('tcasCanvas');
+//   if (!canvas) return;
+//   const ctx = canvas.getContext('2d');
+//   const W = canvas.width, H = canvas.height;
+//   let t = 0;
+
+//   function draw() {
+//     ctx.clearRect(0, 0, W, H);
+//     t += 0.012;
+
+//     // Background
+//     ctx.fillStyle = 'rgba(8,12,20,0.9)';
+//     ctx.fillRect(0, 0, W, H);
+
+//     // Grid lines
+//     ctx.strokeStyle = 'rgba(62,139,255,0.06)';
+//     ctx.lineWidth = 1;
+//     for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+//     for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+//     // ---- Normal drone trajectory ----
+//     // drone moves left to right at mid altitude
+//     const nx = 30 + (t * 60) % (W - 60);
+//     const ny = 140;
+//     // path trail
+//     ctx.strokeStyle = 'rgba(0,212,160,0.3)';
+//     ctx.setLineDash([4,4]);
+//     ctx.lineWidth = 1.5;
+//     ctx.beginPath();
+//     ctx.moveTo(30, ny);
+//     ctx.lineTo(W - 60, ny);
+//     ctx.stroke();
+//     ctx.setLineDash([]);
+
+//     // Normal drone icon
+//     ctx.save();
+//     ctx.translate(nx, ny);
+//     ctx.font = '18px serif';
+//     ctx.fillText('🚁', -9, 6);
+//     ctx.restore();
+//     ctx.fillStyle = '#00d4a0';
+//     ctx.font = '10px DM Sans';
+//     ctx.fillText('Normal Path', 30, ny - 12);
+
+//     // ---- Ghost attacker aircraft ----
+//     const gx = 200;
+//     const gy = 185 + Math.sin(t * 2) * 5;
+//     ctx.save();
+//     ctx.translate(gx, gy);
+//     ctx.font = '16px serif';
+//     ctx.globalAlpha = 0.7 + 0.3 * Math.sin(t * 3);
+//     ctx.fillText('👻', -8, 6);
+//     ctx.restore();
+//     ctx.globalAlpha = 1;
+//     ctx.fillStyle = '#ffb347';
+//     ctx.font = '10px DM Sans';
+//     ctx.fillText('GHOST AIRCRAFT', 170, gy - 10);
+
+//     // Pulse ring around ghost
+//     const pr = 20 + (t * 30) % 40;
+//     ctx.strokeStyle = `rgba(255,107,61,${0.6 - pr/80})`;
+//     ctx.lineWidth = 1.5;
+//     ctx.beginPath();
+//     ctx.arc(gx, gy, pr, 0, Math.PI * 2);
+//     ctx.stroke();
+
+//     // ---- Forced RA maneuver ----
+//     const forced = t > 1.5;
+//     if (forced) {
+//       // Drone diverts downward due to false RA
+//       const progress = Math.min((t - 1.5) / 2, 1);
+//       const fx = nx;
+//       const fy = ny + progress * 100;
+//       ctx.strokeStyle = 'rgba(255,107,61,0.5)';
+//       ctx.setLineDash([3,3]);
+//       ctx.lineWidth = 1.5;
+//       ctx.beginPath();
+//       ctx.moveTo(W * 0.35, ny);
+//       ctx.quadraticCurveTo(W * 0.5, ny + 50, W - 60, ny + 100);
+//       ctx.stroke();
+//       ctx.setLineDash([]);
+
+//       // RA label
+//       ctx.fillStyle = '#ff6b3d';
+//       ctx.font = 'bold 10px DM Sans';
+//       ctx.fillText('⚠ FALSE RA → DESCEND', W * 0.35 + 10, ny + 20);
+
+//       // Ground danger zone
+//       ctx.fillStyle = 'rgba(255,107,61,0.08)';
+//       ctx.fillRect(0, H - 60, W, 60);
+//       ctx.fillStyle = '#ff6b3d';
+//       ctx.font = '10px DM Sans';
+//       ctx.fillText('GROUND IMPACT RISK', W/2 - 60, H - 20);
+//     }
+
+//     // Attacker dot at bottom
+//     ctx.fillStyle = '#ff6b3d';
+//     ctx.beginPath();
+//     ctx.arc(60, H - 30, 6, 0, Math.PI * 2);
+//     ctx.fill();
+//     ctx.fillStyle = '#ffb347';
+//     ctx.font = '10px DM Sans';
+//     ctx.fillText('Attacker (SDR)', 72, H - 26);
+
+//     // Altitude labels
+//     ctx.fillStyle = 'rgba(122,139,168,0.6)';
+//     ctx.font = '10px DM Sans';
+//     ctx.fillText('400m alt', 4, ny + 4);
+//     ctx.fillText('Ground', 4, H - 24);
+
+//     tcasRAF = requestAnimationFrame(draw);
+//   }
+//   if (tcasRAF) cancelAnimationFrame(tcasRAF);
+//   draw();
+// }
+
+// ============ TCAS Canvas Animation ============
+let tcasRAF;
+function startTCASCanvas() {
+  const canvas = document.getElementById('tcasCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let t = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    t += 0.012;
+
+    // Loop every 5 seconds: 0-2 normal, 2-4 attack+divert, 4-5 reset
+    const cycle = t % 5;
+    const phase = cycle < 2 ? 'normal' : cycle < 4 ? 'attack' : 'reset';
+
+    // Background
+    ctx.fillStyle = 'rgba(8,12,20,0.9)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(62,139,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    const ny = 140;
+
+    // ---- Normal drone trajectory ----
+    ctx.strokeStyle = 'rgba(0,212,160,0.3)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(30, ny);
+    ctx.lineTo(W - 60, ny);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#00d4a0';
+    ctx.font = '10px DM Sans';
+    ctx.fillText('Normal Path', 30, ny - 12);
+
+    // Drone position: moves across during normal/attack, freezes at divert point during reset
+    let nx;
+    if (phase === 'normal') {
+      nx = 30 + (cycle / 2) * (W - 90);
+    } else if (phase === 'attack') {
+      const attackProgress = (cycle - 2) / 2; // 0→1
+      nx = 30 + attackProgress * (W * 0.35 - 30); // only reaches divert point
+    } else {
+      nx = 30; // snap back for reset
+    }
+
+    // ---- Ghost attacker aircraft (visible during attack phase) ----
+    if (phase === 'attack' || phase === 'reset') {
+      const gx = 200;
+      const gy = 185 + Math.sin(t * 2) * 5;
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.font = '16px serif';
+      ctx.globalAlpha = phase === 'reset' ? 0 : 0.7 + 0.3 * Math.sin(t * 3);
+      ctx.fillText('👻', -8, 6);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      if (phase === 'attack') {
+        ctx.fillStyle = '#ffb347';
+        ctx.font = '10px DM Sans';
+        ctx.fillText('GHOST AIRCRAFT', 170, gy - 10);
+
+        // Pulse ring
+        const pr = 20 + (t * 30) % 40;
+        ctx.strokeStyle = `rgba(255,107,61,${Math.max(0, 0.6 - pr / 80)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(gx, gy, pr, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // ---- Forced RA divert path (grows in during attack phase) ----
+    if (phase === 'attack') {
+      const progress = (cycle - 2) / 2; // 0→1
+      ctx.strokeStyle = 'rgba(255,107,61,0.5)';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.35, ny);
+      ctx.quadraticCurveTo(W * 0.5, ny + 50, W * 0.35 + progress * (W * 0.65 - 60), ny + progress * 100);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#ff6b3d';
+      ctx.font = 'bold 10px DM Sans';
+      ctx.fillText('⚠ FALSE RA → DESCEND', W * 0.35 + 10, ny + 20);
+
+      // Ground danger zone fades in
+      ctx.fillStyle = `rgba(255,107,61,${0.04 + progress * 0.06})`;
+      ctx.fillRect(0, H - 60, W, 60);
+      ctx.fillStyle = '#ff6b3d';
+      ctx.font = '10px DM Sans';
+      ctx.fillText('GROUND IMPACT RISK', W / 2 - 60, H - 20);
+    }
+
+    // Drone icon (drawn last so it's on top)
+    if (phase !== 'reset') {
+      ctx.save();
+      ctx.translate(nx, ny);
+      ctx.font = '18px serif';
+      ctx.fillText('🚁', -9, 6);
+      ctx.restore();
+    }
+
+    // Status label
+    ctx.font = 'bold 11px DM Sans';
+    if (phase === 'normal') {
+      ctx.fillStyle = '#00d4a0';
+      ctx.fillText('✓ Secure Flight — No Threat', W / 2 - 75, 24);
+    } else if (phase === 'attack') {
+      ctx.fillStyle = '#ff6b3d';
+      ctx.fillText('⚠ FALSE TCAS RA — FORCED DESCENT', W / 2 - 110, 24);
+    }
+
+    // Attacker dot
+    ctx.fillStyle = '#ff6b3d';
+    ctx.beginPath();
+    ctx.arc(60, H - 30, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffb347';
+    ctx.font = '10px DM Sans';
+    ctx.fillText('Attacker (SDR)', 72, H - 26);
+
+    // Altitude labels
+    ctx.fillStyle = 'rgba(122,139,168,0.6)';
+    ctx.font = '10px DM Sans';
+    ctx.fillText('400m alt', 4, ny + 4);
+    ctx.fillText('Ground', 4, H - 24);
+
+    tcasRAF = requestAnimationFrame(draw);
+  }
+
+  if (tcasRAF) cancelAnimationFrame(tcasRAF);
+  draw();
+}
+
+// ============ Cell Tower Canvas Animation ============
+let cellRAF;
+function startCellCanvas() {
+  const canvas = document.getElementById('cellCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let t = 0;
+
+  const legTowerX = 80, legTowerY = 240;
+  const rogueTowerX = 300, rogueTowerY = 220;
+  const droneX = 200, droneStartY = 100;
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    t += 0.015;
+
+    // Background
+    ctx.fillStyle = 'rgba(8,12,20,0.9)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(62,139,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    // Phase: 0-2s legitimate, 2-4s rogue takes over, loops
+    const phase = (t % 4);
+    const rogueActive = phase > 2;
+
+    // ---- Legitimate tower ----
+    ctx.fillStyle = '#3e8bff';
+    ctx.fillRect(legTowerX - 4, legTowerY - 40, 8, 40);
+    ctx.fillStyle = '#3e8bff';
+    ctx.font = '14px serif'; ctx.fillText('🗼', legTowerX - 8, legTowerY - 38);
+    ctx.fillStyle = 'rgba(62,139,255,0.7)'; ctx.font = '9px DM Sans';
+    ctx.fillText('Legitimate Cell', legTowerX - 30, legTowerY + 14);
+    ctx.fillText('Authenticated', legTowerX - 22, legTowerY + 24);
+
+    // Legitimate signal rings
+    if (!rogueActive) {
+      for (let i = 0; i < 3; i++) {
+        const r = 20 + ((t * 50 + i * 25) % 80);
+        const alpha = 0.5 - r / 150;
+        if (alpha > 0) {
+          ctx.strokeStyle = `rgba(62,139,255,${alpha})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(legTowerX, legTowerY - 20, r, -Math.PI, 0);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ---- Rogue tower ----
+    ctx.fillStyle = '#ff6b3d';
+    ctx.fillRect(rogueTowerX - 4, rogueTowerY - 40, 8, 40);
+    ctx.font = '14px serif'; ctx.fillText('📡', rogueTowerX - 8, rogueTowerY - 38);
+    ctx.fillStyle = 'rgba(255,107,61,0.8)'; ctx.font = '9px DM Sans';
+    ctx.fillText('Rogue Base Station', rogueTowerX - 50, rogueTowerY + 14);
+    ctx.fillText('⚠ IMSI Catcher', rogueTowerX - 36, rogueTowerY + 24);
+
+    if (rogueActive) {
+      // Stronger rogue signals
+      for (let i = 0; i < 3; i++) {
+        const r = 20 + ((t * 60 + i * 28) % 100);
+        const alpha = 0.6 - r / 150;
+        if (alpha > 0) {
+          ctx.strokeStyle = `rgba(255,107,61,${alpha})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(rogueTowerX, rogueTowerY - 20, r, -Math.PI, 0);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ---- Drone ----
+    const droneY = droneStartY + Math.sin(t * 1.5) * 12;
+    ctx.font = '18px serif';
+    ctx.fillText('🚁', droneX - 9, droneY + 6);
+
+    // Connection line
+    const activeX = rogueActive ? rogueTowerX : legTowerX;
+    const activeY = (rogueActive ? rogueTowerY : legTowerY) - 20;
+    const lineColor = rogueActive ? 'rgba(255,107,61,0.7)' : 'rgba(62,139,255,0.7)';
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, rogueActive ? 3 : 0]);
+    ctx.beginPath();
+    ctx.moveTo(droneX, droneY);
+    ctx.lineTo(activeX, activeY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Status label
+    if (rogueActive) {
+      ctx.fillStyle = '#ff6b3d';
+      ctx.font = 'bold 11px DM Sans';
+      ctx.fillText('⚠ HIJACKED — C2 INTERCEPTED', W/2 - 90, 28);
+    } else {
+      ctx.fillStyle = '#00d4a0';
+      ctx.font = '11px DM Sans';
+      ctx.fillText('✓ Secure C2 Link', W/2 - 45, 28);
+    }
+
+    // Data packets animation
+    const pProgress = (t % 1);
+    const px = legTowerX + (droneX - legTowerX) * pProgress;
+    const py = (legTowerY - 20) + (droneY - (legTowerY - 20)) * pProgress;
+    ctx.fillStyle = rogueActive ? '#ff6b3d' : '#00d4a0';
+    ctx.beginPath();
+    ctx.arc(px, py, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    cellRAF = requestAnimationFrame(draw);
+  }
+  if (cellRAF) cancelAnimationFrame(cellRAF);
+  draw();
+}
+
+// Start canvas on correct slide if already there
+updateNav();
+</script>
+</body>
+</html>
